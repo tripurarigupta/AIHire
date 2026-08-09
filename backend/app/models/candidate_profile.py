@@ -9,6 +9,8 @@ from app.models.base_model import BaseModel
 
 if TYPE_CHECKING:
     from app.models.user import User
+    from app.models.resume import Resume
+    from app.models.application import Application
 
 
 class CandidateProfile(BaseModel):
@@ -33,4 +35,14 @@ class CandidateProfile(BaseModel):
 
     user: Mapped["User"] = relationship(
         back_populates="candidate_profile",
+    )
+    
+    resumes: Mapped[list["Resume"]] = relationship(
+    back_populates="candidate",
+    cascade="all, delete-orphan",
+    )
+    
+    applications: Mapped[list["Application"]] = relationship(
+    back_populates="candidate",
+    cascade="all, delete-orphan",
     )
