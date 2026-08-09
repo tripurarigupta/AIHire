@@ -10,6 +10,7 @@ from app.models.base_model import BaseModel
 if TYPE_CHECKING:
     from app.models.candidate_profile import CandidateProfile
     from app.models.job import Job
+    from app.models.interview import Interview
 
 
 class Application(BaseModel):
@@ -52,4 +53,10 @@ class Application(BaseModel):
             "job_id",
             name="uq_candidate_job_application",
         ),
+    )
+    
+    interview: Mapped["Interview"] = relationship(
+    back_populates="application",
+    uselist=False,
+    cascade="all, delete-orphan",
     )
