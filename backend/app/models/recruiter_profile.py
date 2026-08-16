@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -33,15 +33,15 @@ class RecruiterProfile(BaseModel):
     )
 
     company_description: Mapped[str | None] = mapped_column(
-        String(500),
+        Text,
         nullable=True,
     )
 
     user: Mapped["User"] = relationship(
         back_populates="recruiter_profile",
     )
-    
+
     jobs: Mapped[list["Job"]] = relationship(
-    back_populates="recruiter",
-    cascade="all, delete-orphan",
+        back_populates="recruiter",
+        cascade="all, delete-orphan",
     )

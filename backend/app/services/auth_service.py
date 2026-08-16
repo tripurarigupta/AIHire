@@ -18,6 +18,9 @@ def register_user(
 
     if existing_user:
         raise ValueError("Email is already registered")
+    
+    if data.role == UserRole.ADMIN:
+        raise ValueError("Admin registration is not allowed")
 
     hashed_password = hash_password(data.password)
 
