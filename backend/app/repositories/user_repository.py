@@ -12,3 +12,11 @@ def get_user_by_email(
         select(User).where(User.email == email)
     )
     return result.scalar_one_or_none()
+
+def get_user_by_id(
+    db: Session,
+    user_id,
+):
+    result = db.execute( select(User).where(User.id == user_id) )
+
+    return result.scalar_one_or_none()

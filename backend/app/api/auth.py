@@ -3,6 +3,7 @@ from app.database.session import get_db
 from app.core.security import get_current_user
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
+from app.models.user import User
 
 from app.schemas.auth import RegisterRequest, UserResponse, TokenResponse
 from app.services.auth_service import register_user,login_user
@@ -61,8 +62,11 @@ def login(
         
 @router.get("/me")
 def get_me(
-    current_user: str = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     return {
-        "user_id": current_user,
+       "user_id": current_user.id,
+        "full_name": current_user.full_name,
+        "email": current_user.email,
+        "role": current_user.role
     }

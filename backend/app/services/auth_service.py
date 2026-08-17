@@ -28,7 +28,7 @@ def register_user(
         full_name=data.full_name,
         email=data.email,
         password_hash=hashed_password,
-        role=UserRole.CANDIDATE,
+        role=data.role,
     )
 
     db.add(user)
