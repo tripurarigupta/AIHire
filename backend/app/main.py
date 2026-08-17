@@ -3,6 +3,7 @@ from app.api.auth import router as auth_router
 from app.api.candidate_profile import router as candidate_profile_router
 from app.api.recruiter_profile import router as recruiter_profile_router
 from app.api.job import router as job_router
+from app.api.application import router as application_router
 
 app = FastAPI(
     title = "AIHire",
@@ -15,3 +16,4 @@ app.include_router(auth_router)
 app.include_router(candidate_profile_router)
 app.include_router(recruiter_profile_router)
 app.include_router(job_router)
+app.include_router(application_router)
