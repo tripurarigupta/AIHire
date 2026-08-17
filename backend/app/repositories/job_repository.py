@@ -1,5 +1,7 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
+from uuid import UUID
 from app.models.job import Job
 
 
@@ -26,3 +28,28 @@ def create_job(
     db.refresh(job)
 
     return job
+
+
+def get_all_jobs(
+    db: Session,
+):
+    result = db.execute(
+        select(Job)
+        .where(Job.is_active.is_(True))
+        .order_by(Job.created_at.desc())
+    )
+
+    return result.scalars().all()
+
+def get_job_by_id(
+    db: Session,
+    job_id: UUID
+):
+    result = db.execute(
+        select(Job).where(
+            Job.id == job_id,
+            Job.is_active.is_(True)
+        )
+    )
+    
+    return result.scalar_one_or_none()

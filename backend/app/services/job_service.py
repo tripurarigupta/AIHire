@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
-
+from uuid import UUID
 from app.models.recruiter_profile import RecruiterProfile
-from app.repositories.job_repository import create_job
+from app.repositories.job_repository import create_job, get_all_jobs, get_job_by_id
 from app.schemas.job import JobCreate
+
 
 
 def create_job_for_recruiter(
@@ -30,3 +31,21 @@ def create_job_for_recruiter(
         location=data.location,
         employment_type=data.employment_type,
     )
+    
+def get_jobs(
+    db: Session,
+):
+    return get_all_jobs(db)
+
+def get_job(
+    db: Session,
+    job_id: UUID
+):
+    job = get_job_by_id(
+        db,
+        job_id
+    )
+    if not job:
+        raise ValueError("Job not found")
+    
+    return job
