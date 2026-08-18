@@ -78,3 +78,24 @@ def get_applications_for_recruiter(
     )
 
     return result.scalars().all()
+
+def update_application_status(
+    db: Session,
+    application: Application,
+    status: str,
+):
+    application.status = status
+    db.commit()
+    db.refresh(application)
+    
+    return application
+
+def get_application_by_id(
+    db: Session,
+    application_id: UUID,
+):
+    result = db.execute(
+        select(Application).where(Application.id == application_id)
+    )
+    
+    return result.scalar_one_or_none()

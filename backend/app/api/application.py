@@ -10,9 +10,10 @@ from app.models.user_role import UserRole
 from app.schemas.application import (
     ApplicationCreate,
     ApplicationResponse,
-    RecruiterApplicationResponse
+    RecruiterApplicationResponse,
+    ApplicationStatusUpdate
 )
-from app.services.application_service import apply_for_job, get_recruiter_applications
+from app.services.application_service import apply_for_job, get_recruiter_applications, change_application_status
 
 
 router = APIRouter(
@@ -67,6 +68,32 @@ def list_recruiter_applications(
 
     except ValueError as error:
         raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        )
+        
+@router.patch(
+    "/applications/{application_id}/status",
+    response_model=RecruiterApplicationResponse,
+)
+def update_status(
+    application_id: UUID,
+    data: ApplicationStatusUpdate,
+    current_user: User = Depends(
+        require_role(UserRole.RECRUITER)
+    ),
+    db: Session = Depends(get_db),
+):
+    try:
+        return change_application_status(
+            db=db,
+            application_id=application_id,
+            recruiter_user_id=current_user.id,
+            new_status=data.status,
+        )
+
+    except ValueError as error:
+            raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error),
         )

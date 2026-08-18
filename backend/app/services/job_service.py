@@ -3,7 +3,7 @@ from uuid import UUID
 from app.models.recruiter_profile import RecruiterProfile
 from app.repositories.job_repository import create_job, get_all_jobs, get_job_by_id
 from app.schemas.job import JobCreate
-
+from app.repositories.recruiter_profile_repository import get_recruiter_profile_by_user_id
 
 
 def create_job_for_recruiter(
@@ -11,11 +11,10 @@ def create_job_for_recruiter(
     user_id,
     data: JobCreate,
 ):
-    recruiter_profile = (
-        db.query(RecruiterProfile)
-        .filter(RecruiterProfile.user_id == user_id)
-        .first()
-    )
+    recruiter_profile = get_recruiter_profile_by_user_id(
+        db, 
+        user_id
+        )
 
     if not recruiter_profile:
         raise ValueError(

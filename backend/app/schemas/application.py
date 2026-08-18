@@ -1,4 +1,5 @@
 from uuid import UUID
+from enum import Enum
 
 from pydantic import BaseModel
 
@@ -27,3 +28,13 @@ class RecruiterApplicationResponse(BaseModel):
     model_config = {
         "from_attributes": True,
     }
+    
+class ApplicationStatus(str, Enum):
+    APPLIED = "applied"
+    SHORTLISTED = "shortlisted"
+    INTERVIEW = "interview"
+    SELECTED = "selected"
+    REJECTED = "rejected"
+
+class ApplicationStatusUpdate(BaseModel):
+    status: ApplicationStatus
