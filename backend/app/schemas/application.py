@@ -16,3 +16,14 @@ class ApplicationResponse(BaseModel):
     model_config = {
         "from_attributes": True,
     }
+    
+class RecruiterApplicationResponse(BaseModel):
+    id: UUID
+    candidate_id: UUID
+    job_id: UUID
+    status: str
+    cover_letter: str | None
+
+    model_config = {
+        "from_attributes": True,
+    }

@@ -64,3 +64,17 @@ def create_application(
     db.refresh(application)
 
     return application
+
+
+def get_applications_for_recruiter(
+    db: Session,
+    recruiter_id: UUID,
+):
+    result = db.execute(
+        select(Application)
+        .join(Job, Application.job_id == Job.id)
+        .where(Job.recruiter_id == recruiter_id)
+        .order_by(Application.created_at.desc())
+    )
+
+    return result.scalars().all()

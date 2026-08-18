@@ -25,7 +25,7 @@ router = APIRouter(
 )
 def create_candidate_profile(
     data: CandidateProfileCreate,
-    current_user: str = Depends(require_role(UserRole.CANDIDATE)),
+    current_user: User = Depends(require_role(UserRole.CANDIDATE)),
     db: Session = Depends(get_db),
 ):
     try:
