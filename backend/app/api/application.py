@@ -11,9 +11,15 @@ from app.schemas.application import (
     ApplicationCreate,
     ApplicationResponse,
     RecruiterApplicationResponse,
-    ApplicationStatusUpdate
+    ApplicationStatusUpdate,
+    CandidateApplicationResponse
 )
-from app.services.application_service import apply_for_job, get_recruiter_applications, change_application_status
+from app.services.application_service import (
+    apply_for_job,
+    get_recruiter_applications,
+    change_application_status,
+    get_candidate_applications
+)
 
 
 router = APIRouter(
@@ -94,6 +100,29 @@ def update_status(
 
     except ValueError as error:
             raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        )
+            
+            
+@router.get(
+    "/applications/me",
+    response_model=list[CandidateApplicationResponse],
+)
+def list_candidate_applications(
+    current_user: User = Depends(
+        require_role(UserRole.CANDIDATE)
+    ),
+    db: Session = Depends(get_db),
+):
+    try:
+        return get_candidate_applications(
+            db=db,
+            user_id=current_user.id,
+        )
+
+    except ValueError as error:
+        raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error),
         )

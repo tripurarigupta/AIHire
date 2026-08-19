@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
 
 from app.models.application import Application
@@ -99,3 +99,17 @@ def get_application_by_id(
     )
     
     return result.scalar_one_or_none()
+
+
+def get_applications_for_candidate(
+    db: Session,
+    candidate_id: UUID,
+):
+    result = db.execute(
+        select(Application)
+        .options(joinedload(Application.job))
+        .where(Application.candidate_id == candidate_id)
+        .order_by(Application.created_at.desc())
+    )
+
+    return result.scalars().all()

@@ -11,7 +11,8 @@ from app.repositories.application_repository import (
     create_application,
     get_applications_for_recruiter,
     update_application_status,
-    get_application_by_id
+    get_application_by_id,
+    get_applications_for_candidate
 )
 from app.schemas.application import ApplicationCreate
 
@@ -107,3 +108,23 @@ def change_application_status(
 
     # 4. Save the new status
     return update_application_status(db, application, new_status)
+
+
+def get_candidate_applications(
+    db: Session,
+    user_id: UUID,
+):
+    # 1. Identify the candidate
+    candidate_profile = get_candidate_profile(
+        db,
+        user_id,
+    )
+
+    if not candidate_profile:
+        raise ValueError("Candidate profile must be created first")
+
+    # 2. Fetch and return their applications
+    return get_applications_for_candidate(
+        db=db,
+        candidate_id=candidate_profile.id,
+    )

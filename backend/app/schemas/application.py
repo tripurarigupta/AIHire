@@ -38,3 +38,21 @@ class ApplicationStatus(str, Enum):
 
 class ApplicationStatusUpdate(BaseModel):
     status: ApplicationStatus
+    
+
+class JobSummary(BaseModel):
+    id: UUID
+    title: str
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+class CandidateApplicationResponse(BaseModel):
+    id: UUID
+    status: str
+    job: JobSummary
+    
+    model_config = {
+        "from_attributes": True,
+    }
