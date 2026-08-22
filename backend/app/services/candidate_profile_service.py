@@ -79,7 +79,7 @@ def upload_candidate_resume(
     
     profile.skills = extracted_skills_string 
     db.commit()
-    
+    db.refresh(profile)
     original_file_name = file.filename or f"resume.{file_extension}"
     
     return add_resume_to_profile(

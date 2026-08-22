@@ -12,10 +12,12 @@ from app.repositories.application_repository import (
     get_applications_for_recruiter,
     update_application_status,
     get_application_by_id,
-    get_applications_for_candidate
+    get_applications_for_candidate,
+    get_ranked_applications_for_job
 )
 from app.schemas.application import ApplicationCreate
 
+from app.utils.matching_engine import calculate_keyword_match
 
 def apply_for_job(
     db: Session,
@@ -55,11 +57,17 @@ def apply_for_job(
             "You have already applied for this job"
         )
 
+    score = calculate_keyword_match(
+        resume_skills_str=candidate_profile.skills, # Ensure your candidate profile has a skills column
+        job_skills_str=job.required_skills
+    )
+    
     return create_application(
         db=db,
         candidate_id=candidate_profile.id,
         job_id=job_id,
         cover_letter=data.cover_letter,
+        ats_score=score,
     )
     
     
@@ -128,3 +136,19 @@ def get_candidate_applications(
         db=db,
         candidate_id=candidate_profile.id,
     )
+    
+    
+def get_job_applicants_ranked(db: Session, job_id: UUID, recruiter_user_id: UUID):
+    # 1. Identify the recruiter
+    recruiter_profile = get_recruiter_profile_by_user_id(db, recruiter_user_id)
+    if not recruiter_profile:
+        raise ValueError("Recruiter profile not found")
+
+    # 2. Verify the recruiter owns this job
+    job = get_job_by_id(db, job_id)
+    if not job or job.recruiter_id != recruiter_profile.id:
+        raise ValueError("You do not have permission to view these applications")
+
+    # 3. Fetch and return the ranked list from the repository
+    # (Don't forget to import get_ranked_applications_for_job at the top of your file!)
+    return get_ranked_applications_for_job(db, job_id)

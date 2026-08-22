@@ -52,11 +52,13 @@ def create_application(
     candidate_id,
     job_id: UUID,
     cover_letter: str | None,
+    ats_score: float
 ):
     application = Application(
         candidate_id=candidate_id,
         job_id=job_id,
         cover_letter=cover_letter,
+        ats_score=ats_score
     )
 
     db.add(application)
@@ -113,3 +115,13 @@ def get_applications_for_candidate(
     )
 
     return result.scalars().all()
+
+
+def get_ranked_applications_for_job(db: Session, job_id: UUID):
+    """Returns applications for a specific job, naturally ranked by ATS score."""
+    return (
+        db.query(Application)
+        .filter(Application.job_id == job_id)
+        .order_by(Application.ats_score.desc())
+        .all()
+    )

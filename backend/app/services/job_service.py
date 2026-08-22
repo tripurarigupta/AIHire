@@ -35,8 +35,7 @@ def create_job_for_recruiter(
         recruiter_id=recruiter_profile.id,
         title=data.title,
         description=data.description,
-        required_skills=final_skills,
-        required_skills=data.required_skills,
+        required_skills=extracted_skills,
         location=data.location,
         employment_type=data.employment_type,
     )

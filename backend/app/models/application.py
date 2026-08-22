@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import ForeignKey, String, Text, UniqueConstraint, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -37,6 +37,12 @@ class Application(BaseModel):
     cover_letter: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
+    )
+    
+    ats_score: Mapped[float | None] = mapped_column(
+    Float, 
+    nullable=True,
+    default=0.0
     )
 
     candidate: Mapped["CandidateProfile"] = relationship(

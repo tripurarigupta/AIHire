@@ -18,7 +18,8 @@ from app.services.application_service import (
     apply_for_job,
     get_recruiter_applications,
     change_application_status,
-    get_candidate_applications
+    get_candidate_applications,
+    get_job_applicants_ranked
 )
 
 
@@ -119,6 +120,34 @@ def list_candidate_applications(
         return get_candidate_applications(
             db=db,
             user_id=current_user.id,
+        )
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        )
+        
+@router.get(
+    "/{job_id}/applications/ranked",
+    response_model=list[RecruiterApplicationResponse],
+)
+def list_ranked_applications(
+    job_id: UUID,
+    current_user: User = Depends(
+        require_role(UserRole.RECRUITER)
+    ),
+    db: Session = Depends(get_db),
+):
+    """
+    Returns applications for a specific job, naturally ranked by ATS score.
+    Only accessible by the Recruiter who owns the job.
+    """
+    try:
+        return get_job_applicants_ranked(
+            db=db,
+            job_id=job_id,
+            recruiter_user_id=current_user.id,
         )
 
     except ValueError as error:

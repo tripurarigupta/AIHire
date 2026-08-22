@@ -2,6 +2,7 @@ from uuid import UUID
 from enum import Enum
 
 from pydantic import BaseModel
+from typing import Optional
 
 class ApplicationCreate(BaseModel):
     cover_letter: str | None = None
@@ -24,6 +25,7 @@ class RecruiterApplicationResponse(BaseModel):
     job_id: UUID
     status: str
     cover_letter: str | None
+    ats_score: Optional[float]
 
     model_config = {
         "from_attributes": True,
