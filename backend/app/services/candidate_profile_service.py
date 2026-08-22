@@ -12,6 +12,10 @@ from app.repositories.candidate_profile_repository import (
 )
 from app.schemas.candidate_profile import CandidateProfileCreate
 
+from app.utils.pdf_parser import extract_text_from_pdf
+from app.utils.docx_parser import extract_text_from_docx
+from app.utils.skill_extractor import extract_skills_from_text
+
 
 def create_profile(
     db: Session,
@@ -48,23 +52,40 @@ def upload_candidate_resume(
     if not profile:
         raise ValueError("Candidate profile must be created first")
 
-    if file.content_type != "application/pdf":
-        raise ValueError("Only PDF files are allowed")
+    # 1. Update Validation to allow both PDF and DOCX
+    allowed_types = [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" # Standard DOCX MIME type
+    ]
+    if file.content_type not in allowed_types:
+        raise ValueError("Only PDF and DOCX files are allowed")
 
-    # Keep the same file-saving logic
-    file_extension = file.filename.split(".")[-1] if file.filename else "pdf"
+    # Keep file saving logic
+    file_extension = file.filename.split(".")[-1].lower() if file.filename else "pdf"
     unique_filename = f"{profile.id}_{uuid.uuid4().hex[:8]}.{file_extension}"
     file_path = os.path.join(UPLOAD_DIR, unique_filename)
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # NEW: Call the new repository function, passing the original file name
-    original_file_name = file.filename or "resume.pdf"
+    # 2. Branch the parsing logic based on the file extension
+    extracted_text = ""
+    if file_extension == "pdf":
+        extracted_text = extract_text_from_pdf(file_path)
+    elif file_extension == "docx":
+        extracted_text = extract_text_from_docx(file_path)
+
+    extracted_skills_string = extract_skills_from_text(extracted_text)
+    
+    profile.skills = extracted_skills_string 
+    db.commit()
+    
+    original_file_name = file.filename or f"resume.{file_extension}"
     
     return add_resume_to_profile(
         db=db, 
         candidate_id=profile.id, 
         file_path=file_path, 
-        file_name=original_file_name
+        file_name=original_file_name,
+        parsed_text=extracted_text, 
     )

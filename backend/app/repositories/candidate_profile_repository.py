@@ -48,12 +48,14 @@ def add_resume_to_profile(
     candidate_id: UUID,
     file_path: str,
     file_name: str,
+    parsed_text: str,
 ):
     # Create the new Resume database record
     new_resume = Resume(
         candidate_id=candidate_id,
         file_path=file_path,
-        file_name=file_name
+        file_name=file_name,
+        parsed_text=parsed_text,
     )
     
     db.add(new_resume)
