@@ -1,16 +1,17 @@
 from typing import TYPE_CHECKING
+from datetime import datetime
 
-from sqlalchemy import ForeignKey, String, Text, UniqueConstraint, Float
+from sqlalchemy import ForeignKey, String, Text, UniqueConstraint, Float, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base_model import BaseModel
+from app.models.application_status import ApplicationStatus
 
 
 if TYPE_CHECKING:
     from app.models.candidate_profile import CandidateProfile
     from app.models.job import Job
-    from app.models.interview import Interview
 
 
 class Application(BaseModel):
@@ -28,22 +29,26 @@ class Application(BaseModel):
         nullable=False,
     )
 
-    status: Mapped[str] = mapped_column(
+    status: Mapped[ApplicationStatus] = mapped_column(
         String(50),
         nullable=False,
-        default="applied",
+        default=ApplicationStatus.APPLIED,
     )
 
     cover_letter: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
-    
+
     ats_score: Mapped[float | None] = mapped_column(
-    Float, 
-    nullable=True,
-    default=0.0
+        Float,
+        nullable=True,
+        default=0.0,
     )
+
+    @property
+    def applied_at(self) -> datetime:
+        return self.created_at
 
     candidate: Mapped["CandidateProfile"] = relationship(
         back_populates="applications",
@@ -59,10 +64,4 @@ class Application(BaseModel):
             "job_id",
             name="uq_candidate_job_application",
         ),
-    )
-    
-    interview: Mapped["Interview"] = relationship(
-    back_populates="application",
-    uselist=False,
-    cascade="all, delete-orphan",
     )
