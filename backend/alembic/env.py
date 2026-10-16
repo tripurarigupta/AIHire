@@ -8,6 +8,9 @@ from alembic import context
 from app.core.config import settings
 from app.models.base import Base
 
+# Import all models so Base.metadata knows about them
+import app.models  # noqa: F401
+
 # Alembic Config object
 config = context.config
 
