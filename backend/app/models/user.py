@@ -10,6 +10,7 @@ from app.models.user_role import UserRole
 if TYPE_CHECKING:
     from app.models.candidate_profile import CandidateProfile
     from app.models.recruiter_profile import RecruiterProfile
+    from app.models.notification import Notification
 
 
 class User(BaseModel):
@@ -58,5 +59,10 @@ class User(BaseModel):
     recruiter_profile: Mapped["RecruiterProfile"] = relationship(
         back_populates="user",
         uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+    notifications: Mapped[list["Notification"]] = relationship(
+        back_populates="user",
         cascade="all, delete-orphan",
     )
