@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.repositories.recruiter_profile_repository import (
     get_recruiter_profile_by_user_id,
     create_recruiter_profile,
+    update_recruiter_profile
 )
 from app.schemas.recruiter_profile import RecruiterProfileCreate
 
@@ -23,6 +24,31 @@ def create_profile(
     return create_recruiter_profile(
         db=db,
         user_id=user_id,
+        company_name=data.company_name,
+        designation=data.designation,
+        company_description=data.company_description,
+    )
+    
+def get_profile(db: Session, user_id):
+    profile = get_recruiter_profile_by_user_id(db, user_id)
+    if not profile:
+        raise ValueError("Recruiter profile not found")
+    return profile
+
+
+def update_or_create_profile(db: Session, user_id, data: RecruiterProfileCreate):
+    profile = get_recruiter_profile_by_user_id(db, user_id)
+    if not profile:
+        return create_recruiter_profile(
+            db=db,
+            user_id=user_id,
+            company_name=data.company_name,
+            designation=data.designation,
+            company_description=data.company_description,
+        )
+    return update_recruiter_profile(
+        db=db,
+        profile=profile,
         company_name=data.company_name,
         designation=data.designation,
         company_description=data.company_description,

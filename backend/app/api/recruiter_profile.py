@@ -8,7 +8,7 @@ from app.schemas.recruiter_profile import (
     RecruiterProfileCreate,
     RecruiterProfileResponse,
 )
-from app.services.recruiter_profile_service import create_profile
+from app.services.recruiter_profile_service import create_profile, get_profile, update_or_create_profile
 
 
 router = APIRouter(
@@ -39,3 +39,35 @@ def create_recruiter_profile(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(error),
         )
+        
+        
+@router.get(
+    "/me",
+    response_model=RecruiterProfileResponse,
+)
+def get_my_recruiter_profile(
+    current_user: User = Depends(require_role(UserRole.RECRUITER)),
+    db: Session = Depends(get_db),
+):
+    try:
+        return get_profile(db=db, user_id=current_user.id)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        )
+
+@router.put(
+    "/me",
+    response_model=RecruiterProfileResponse,
+)
+def save_or_update_profile(
+    data: RecruiterProfileCreate,
+    current_user: User = Depends(require_role(UserRole.RECRUITER)),
+    db: Session = Depends(get_db),
+):
+    return update_or_create_profile(
+        db=db,
+        user_id=current_user.id,
+        data=data,
+    )
