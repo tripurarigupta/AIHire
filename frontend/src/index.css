@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+/* Class-based dark mode (toggled on <html> by ThemeContext) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ==========================================================================
+   AIHire — unified theme
+   Primary: Indigo (action, links, focus) · Accent: Violet (brand gradient)
+   Status colors are shared everywhere: emerald/amber/rose/sky
+   ========================================================================== */
+
+@theme {
+  /* Brand gradient used on logos and highlights */
+  --color-brand-from: #6366f1; /* indigo-500 */
+  --color-brand-to: #8b5cf6;   /* violet-500 */
+
+  /* Semantic aliases — components reference these utilities below */
+  --color-primary-50: #eef2ff;
+  --color-primary-100: #e0e7ff;
+  --color-primary-200: #c7d2fe;
+  --color-primary-300: #a5b4fc;
+  --color-primary-400: #818cf8;
+  --color-primary-500: #6366f1;
+  --color-primary-600: #4f46e5;
+  --color-primary-700: #4338ca;
+  --color-primary-800: #3730a3;
+  --color-primary-900: #312e81;
+}
+
+/* ---------- Smooth global transitions ---------- */
+button,
+a,
+select,
+input,
+textarea {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Password fields ----------
+   Edge (and IE) inject their own reveal eye into every
+   <input type="password"> through the ::-ms-reveal pseudo-element, which
+   showed up as a second, duplicate eye next to the app's own toggle on
+   Login/Register. Hide the native control so only ours remains. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+/* ---------- Navbar dropdown animation ---------- */
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-dropdown {
+  animation: dropdown-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------- Card entrance animation ---------- */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-up-1 { animation-delay: 50ms; }
+.animate-fade-up-2 { animation-delay: 100ms; }
+.animate-fade-up-3 { animation-delay: 150ms; }
+
+/* ---------- Toast animation ---------- */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.animate-toast {
+  animation: toast-in 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------- Modal animation ---------- */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal {
+  animation: modal-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------- Theme-consistent scrollbar ---------- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.35); /* indigo */
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.55);
+}
+
+/* ---------- Shared gradient helpers ---------- */
+.brand-gradient {
+  background-image: linear-gradient(135deg, var(--color-brand-from), var(--color-brand-to));
+}
+
+.brand-text {
+  background-image: linear-gradient(135deg, var(--color-brand-from), var(--color-brand-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Focus ring everywhere uses the primary color */
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
