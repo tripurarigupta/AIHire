@@ -4,26 +4,35 @@ from uuid import UUID
 
 from app.models.candidate_profile import CandidateProfile
 from app.models.resume import Resume
+from app.models.job import Job
+from app.models.user import User
 
 
 def get_candidate_profile_by_user_id(
     db: Session,
     user_id,
 ):
-    result = db.execute(select(CandidateProfile).where(CandidateProfile.user_id == user_id) )
-
+    result = db.execute(select(CandidateProfile).where(CandidateProfile.user_id == user_id))
     return result.scalar_one_or_none()
 
 
 def create_candidate_profile(
     db: Session,
     user_id,
-    education: str | None,
-    experience: str | None,
-    skills: str | None,
+    phone: str | None = None,
+    address: str | None = None,
+    headline: str | None = None,
+    bio: str | None = None,
+    education: str | None = None,
+    experience: str | None = None,
+    skills: str | None = None,
 ):
     profile = CandidateProfile(
         user_id=user_id,
+        phone=phone,
+        address=address,
+        headline=headline,
+        bio=bio,
         education=education,
         experience=experience,
         skills=skills,
@@ -35,12 +44,19 @@ def create_candidate_profile(
 
     return profile
 
+
 def get_candidate_profile_by_id(db: Session, profile_id: UUID):
     result = db.execute(
         select(CandidateProfile).where(CandidateProfile.id == profile_id)
     )
     return result.scalar_one_or_none()
 
+
+def get_resume_by_id(db: Session, resume_id: UUID):
+    result = db.execute(
+        select(Resume).where(Resume.id == resume_id)
+    )
+    return result.scalar_one_or_none()
 
 
 def add_resume_to_profile(
@@ -49,16 +65,37 @@ def add_resume_to_profile(
     file_path: str,
     file_name: str,
     parsed_text: str,
+    parsed_skills: dict | None = None,
+    ats_score: float | None = None,
 ):
-    # Create the new Resume database record
     new_resume = Resume(
         candidate_id=candidate_id,
         file_path=file_path,
         file_name=file_name,
-        parsed_text=parsed_text,
+        extracted_text=parsed_text,
+        parsed_skills=parsed_skills,
+        ats_score=ats_score,
     )
-    
+
     db.add(new_resume)
     db.commit()
-       
+
     return get_candidate_profile_by_id(db, candidate_id)
+
+
+def get_jobs_with_required_skills(db: Session):
+    stmt = select(Job).where(
+        Job.required_skills.isnot(None),
+        Job.is_active.is_(True),
+    )
+    return db.execute(stmt).scalars().all()
+
+
+def get_active_candidate_profiles(db: Session):
+    """Returns every candidate profile that belongs to an active user."""
+    stmt = (
+        select(CandidateProfile)
+        .join(User, CandidateProfile.user_id == User.id)
+        .where(User.is_active.is_(True))
+    )
+    return db.execute(stmt).scalars().all()

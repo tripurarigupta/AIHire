@@ -15,6 +15,17 @@ def get_recruiter_profile_by_user_id(
     return result.scalar_one_or_none()
 
 
+def get_recruiter_profile_by_id(
+    db: Session,
+    profile_id,
+):
+    result = db.execute(
+        select(RecruiterProfile).where( RecruiterProfile.id == profile_id )
+    )
+
+    return result.scalar_one_or_none()
+
+
 def create_recruiter_profile(
     db: Session,
     user_id,
@@ -33,4 +44,18 @@ def create_recruiter_profile(
     db.commit()
     db.refresh(profile)
 
+    return profile
+
+def update_recruiter_profile(
+    db: Session,
+    profile: RecruiterProfile,
+    company_name: str,
+    designation: str | None,
+    company_description: str | None,
+):
+    profile.company_name = company_name
+    profile.designation = designation
+    profile.company_description = company_description
+    db.commit()
+    db.refresh(profile)
     return profile
