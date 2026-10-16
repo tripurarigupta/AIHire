@@ -50,3 +50,8 @@ watchfiles==1.1.0
 websockets==15.0.1
 pwdlib[argon2]==0.3.0
 ipython
+numpy
+pandas
+scipy
+joblib
+scikit-learn==1.7.2
