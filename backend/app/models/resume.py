@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import ForeignKey, String, Text, Float
+from sqlalchemy.dialects.postgresql import UUID, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base_model import BaseModel
@@ -30,10 +30,25 @@ class Resume(BaseModel):
         nullable=False,
     )
 
-    parsed_text: Mapped[str | None] = mapped_column(
+    extracted_text: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
+
+    parsed_skills: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+
+    ats_score: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+
+    # Alias for backward compatibility — maps to created_at from BaseModel
+    @property
+    def uploaded_at(self):
+        return self.created_at
 
     candidate: Mapped["CandidateProfile"] = relationship(
         back_populates="resumes",

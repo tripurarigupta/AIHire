@@ -11,6 +11,9 @@ if TYPE_CHECKING:
     from app.models.user import User
     from app.models.resume import Resume
     from app.models.application import Application
+    from app.models.interview_session import InterviewSession
+    from app.models.interview_question import InterviewQuestionSet
+    from app.models.recommendation import Recommendation
 
 
 class CandidateProfile(BaseModel):
@@ -23,6 +26,28 @@ class CandidateProfile(BaseModel):
         nullable=False,
     )
 
+    phone: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
+    address: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    headline: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+    )
+
+    bio: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    # Transitional fields — currently used by frontend and resume parsing;
+    # will migrate to Resume entity in Phase 2
     education: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
@@ -48,6 +73,21 @@ class CandidateProfile(BaseModel):
     )
 
     applications: Mapped[list["Application"]] = relationship(
+        back_populates="candidate",
+        cascade="all, delete-orphan",
+    )
+
+    interview_sessions: Mapped[list["InterviewSession"]] = relationship(
+        back_populates="candidate",
+        cascade="all, delete-orphan",
+    )
+
+    interview_question_sets: Mapped[list["InterviewQuestionSet"]] = relationship(
+        back_populates="candidate",
+        cascade="all, delete-orphan",
+    )
+
+    recommendations: Mapped[list["Recommendation"]] = relationship(
         back_populates="candidate",
         cascade="all, delete-orphan",
     )
