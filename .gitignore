@@ -20,3 +20,13 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Uploaded resumes and other user data
+backend/uploads/
+
+# SkillNER knowledge base files that ship with the skillNer package
+skill_db_relax_20.json
+token_dist.json
+
+# Local UI screenshots used for palette checks
+palette_shots/
