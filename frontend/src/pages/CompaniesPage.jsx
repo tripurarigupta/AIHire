@@ -8,6 +8,9 @@ export default function CompaniesPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
 
+  // Applying is candidate-only on the API, so the action is only offered to them.
+  const canApply = user?.role?.toLowerCase() === "candidate";
+
   // Every hook must run before any conditional return (Rules of Hooks).
   const [mounted, setMounted] = useState(false);
   const [jobs, setJobs] = useState([]);
@@ -117,7 +120,7 @@ export default function CompaniesPage() {
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{jobs.length === 0 ? "Companies appear here once recruiters post jobs." : "Try clearing the search or location filter."}</p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">{filteredJobs.map((job) => <JobCard key={job.id} job={job} alreadyApplied={appliedJobIds.has(String(job.id))} applying={applyingJobId === String(job.id)} onApply={() => handleApply(job)} />)}</div>
+        <div className="grid gap-4 md:grid-cols-2">{filteredJobs.map((job) => <JobCard key={job.id} job={job} alreadyApplied={appliedJobIds.has(String(job.id))} applying={applyingJobId === String(job.id)} onApply={canApply ? () => handleApply(job) : undefined} />)}</div>
       )}
 
       {toast && <Toast text={toast.text} type={toast.type} onClose={() => setToast(null)} />}

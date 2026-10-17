@@ -108,15 +108,6 @@ export default function InterviewPage() {
   };
 
 
-  if (!mode === "result" && result && error) {
-    return (
-      <div className="space-y-6 max-w-4xl mx-auto py-6">
-        <div className="p-4 rounded-lg border text-sm font-medium bg-red-50 text-red-800 border-red-200">{error}</div>
-        <InterviewHistoryView history={history} />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 max-w-4xl mx-auto py-6">
       <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700">

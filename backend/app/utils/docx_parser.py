@@ -1,9 +1,16 @@
+import io
+
 import docx
 
-def extract_text_from_docx(file_path: str) -> str:
-    """Safely extracts and returns text from a saved DOCX file."""
+
+def extract_text_from_docx(file_bytes: bytes) -> str:
+    """Safely extracts and returns text from DOCX bytes.
+
+    Takes the bytes rather than a path: the API is deployed on a host with a
+    read-only filesystem, so an upload is never written to disk first.
+    """
     try:
-        doc = docx.Document(file_path)
+        doc = docx.Document(io.BytesIO(file_bytes))
         extracted_text = ""
         
         # Word documents are split into paragraphs
@@ -14,5 +21,5 @@ def extract_text_from_docx(file_path: str) -> str:
                 
         return extracted_text.strip()
     except Exception as e:
-        print(f"Error parsing DOCX {file_path}: {e}")
+        print(f"Error parsing DOCX upload: {e}")
         return ""

@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     LLM_MAX_RETRIES: int = 2
     LLM_MAX_QUESTIONS: int = 8
 
+    # --- CORS ---
+    # Comma-separated extra browser origins allowed to call the API, e.g. a
+    # custom frontend domain. Vercel preview deployments get a new hostname per
+    # deployment and are matched by regex in app/main.py instead.
+    CORS_EXTRA_ORIGINS: str = ""
+
     model_config = SettingsConfigDict(
         env_file= BASE_DIR/ ".env",
         env_file_encoding="utf-8",

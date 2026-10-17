@@ -1,7 +1,5 @@
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 from app.repositories.candidate_profile_repository import (
     get_candidate_profile_by_user_id,
@@ -26,6 +24,12 @@ def get_recommendations_for_user(
     # 3. Vectorize text and calculate cosine similarity
     candidate_text = profile.skills.replace(",", " ")
     job_texts = [job.required_skills.replace(",", " ") for job in jobs]
+
+    # Imported here rather than at module scope: scikit-learn takes several
+    # seconds to import, so it stays off the API's startup path and is only paid
+    # by requests that actually compute a match.
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
 
     corpus = [candidate_text] + job_texts
     vectorizer = TfidfVectorizer()

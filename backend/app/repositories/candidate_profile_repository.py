@@ -4,6 +4,7 @@ from uuid import UUID
 
 from app.models.candidate_profile import CandidateProfile
 from app.models.resume import Resume
+from app.models.resume_file import ResumeFile
 from app.models.job import Job
 from app.models.user import User
 
@@ -62,12 +63,17 @@ def get_resume_by_id(db: Session, resume_id: UUID):
 def add_resume_to_profile(
     db: Session,
     candidate_id: UUID,
-    file_path: str,
     file_name: str,
     parsed_text: str,
+    file_path: str | None = None,
     parsed_skills: dict | None = None,
     ats_score: float | None = None,
-):
+) -> Resume:
+    """Creates the resume row and returns it.
+
+    `file_path` is only supplied by the legacy on-disk flow: resumes uploaded
+    from now on keep their bytes in `resume_files` and leave it NULL.
+    """
     new_resume = Resume(
         candidate_id=candidate_id,
         file_path=file_path,
@@ -79,8 +85,43 @@ def add_resume_to_profile(
 
     db.add(new_resume)
     db.commit()
+    db.refresh(new_resume)
 
-    return get_candidate_profile_by_id(db, candidate_id)
+    return new_resume
+
+
+def add_resume_file(
+    db: Session,
+    resume_id: UUID,
+    file_name: str,
+    data: bytes,
+    content_type: str | None = None,
+) -> ResumeFile:
+    """Stores the uploaded file bytes for a resume."""
+    resume_file = ResumeFile(
+        resume_id=resume_id,
+        file_name=file_name,
+        content_type=content_type,
+        size_bytes=len(data),
+        data=data,
+    )
+
+    db.add(resume_file)
+    db.commit()
+    db.refresh(resume_file)
+
+    return resume_file
+
+
+def get_resume_file(
+    db: Session,
+    resume_id: UUID,
+) -> ResumeFile | None:
+    """Loads the stored file for a resume, or None for legacy on-disk rows."""
+    result = db.execute(
+        select(ResumeFile).where(ResumeFile.resume_id == resume_id)
+    )
+    return result.scalar_one_or_none()
 
 
 def get_jobs_with_required_skills(db: Session):

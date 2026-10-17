@@ -9,6 +9,7 @@ from app.models.base_model import BaseModel
 
 if TYPE_CHECKING:
     from app.models.candidate_profile import CandidateProfile
+    from app.models.resume_file import ResumeFile
 
 
 class Resume(BaseModel):
@@ -25,9 +26,12 @@ class Resume(BaseModel):
         nullable=False,
     )
 
-    file_path: Mapped[str] = mapped_column(
+    # Path on disk. Only populated for resumes uploaded before the bytes moved
+    # into the database; new rows store the file in `resume_files` and leave
+    # this NULL, so the filesystem is never a hard dependency.
+    file_path: Mapped[str | None] = mapped_column(
         String(500),
-        nullable=False,
+        nullable=True,
     )
 
     extracted_text: Mapped[str | None] = mapped_column(
@@ -52,4 +56,10 @@ class Resume(BaseModel):
 
     candidate: Mapped["CandidateProfile"] = relationship(
         back_populates="resumes",
+    )
+
+    file: Mapped["ResumeFile | None"] = relationship(
+        back_populates="resume",
+        uselist=False,
+        cascade="all, delete-orphan",
     )

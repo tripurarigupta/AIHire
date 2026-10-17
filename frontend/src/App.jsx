@@ -1,7 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
-import { dashboardPathForRole } from "./utils/roles";
+import { dashboardPathForRole, routeGuardFor } from "./utils/roles";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Register from "./pages/Register";
@@ -14,12 +14,55 @@ import InterviewPage from "./pages/InterviewPage";
 import AdminPage from "./pages/AdminPage";
 import { useEffect } from "react";
 
-// Route guard component
-function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuth();
+// Shown when a signed-in user lands on a page their role cannot use and their
+// own dashboard is that very page - an unrecognised role resolves to /candidate,
+// so redirecting there would bounce forever.
+function RoleMismatchNotice() {
+  const { logout } = useAuth();
+
+  return (
+    <div className="mx-auto mt-16 max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Not available for your account</h2>
+      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        This page belongs to a different account type. Sign in again to continue.
+      </p>
+      <button
+        onClick={() => {
+          logout();
+          window.location.assign("/login");
+        }}
+        className="mt-5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+      >
+        Back to sign in
+      </button>
+    </div>
+  );
+}
+
+// Route guard component.
+//
+// `allowedRoles` restricts a route to specific account types. The API enforces
+// the same rule with require_role(), so without it a signed-in candidate opening
+// /recruiter would not be blocked - they would just see a dashboard whose every
+// request comes back 403, looking like the app is broken.
+function ProtectedRoute({ children, allowedRoles }) {
+  const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
+  const decision = routeGuardFor(user?.role, allowedRoles, location.pathname);
+
+  if (decision.action === "notice") {
+    return <RoleMismatchNotice />;
+  }
+
+  if (decision.action === "redirect") {
+    return <Navigate to={decision.to} replace />;
+  }
+
   return children;
 }
 
@@ -90,7 +133,7 @@ function App() {
               <Route
                 path="/candidate"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["candidate"]}>
                     <CandidateDashboard />
                   </ProtectedRoute>
                 }
@@ -98,7 +141,7 @@ function App() {
               <Route
                 path="/recruiter"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["recruiter"]}>
                     <RecruiterDashboard />
                   </ProtectedRoute>
                 }
@@ -106,7 +149,7 @@ function App() {
               <Route
                 path="/applications"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["candidate"]}>
                     <ApplicationsPage />
                   </ProtectedRoute>
                 }
@@ -122,7 +165,7 @@ function App() {
               <Route
                 path="/interview"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["candidate"]}>
                     <InterviewPage />
                   </ProtectedRoute>
                 }
@@ -130,7 +173,7 @@ function App() {
               <Route
                 path="/admin"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["admin"]}>
                     <AdminPage />
                   </ProtectedRoute>
                 }

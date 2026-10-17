@@ -10,6 +10,12 @@ import {
   Toast,
 } from "../components/ui";
 
+// The API runs as a serverless function, which rejects any request body over
+// 4.5 MB before it reaches the app. Keep a margin under that ceiling so an
+// oversized resume fails with a clear message instead of a platform 413.
+const MAX_RESUME_BYTES = 4 * 1024 * 1024;
+const formatMb = (bytes) => `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+
 export default function CandidateDashboard() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
@@ -85,17 +91,36 @@ export default function CandidateDashboard() {
 
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
+    // Reset the input so picking the same file again after a failure still fires onChange.
+    e.target.value = "";
     if (!file) return;
+
+    if (file.size > MAX_RESUME_BYTES) {
+      showToast(`"${file.name}" is ${formatMb(file.size)} - resumes must be under ${formatMb(MAX_RESUME_BYTES)}. Export a smaller PDF and try again.`, "error");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
     setUploading(true);
     try {
-      const res = await apiClient.post("/candidate-profile/resume", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      const res = await apiClient.post("/candidate-profile/resume", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        // A multi-MB upload on a slow connection can outlast the default timeout.
+        timeout: 180000,
+      });
       const lastResume = res.data.resumes?.[0];
       setProfile(res.data);
       setProfileForm({ education: res.data.education || "", skills: res.data.skills || "", bio: res.data.bio || "" });
       showToast(lastResume?.ats_score != null ? `Resume parsed. ATS score: ${lastResume.ats_score}/100.` : "Resume parsed. Skills extracted.");
-    } catch (err) { showToast(err.response?.data?.detail || "Failed to parse resume.", "error"); } finally { setUploading(false); }
+    } catch (err) {
+      // 413 comes from the hosting platform, not our API, so it has no `detail`.
+      if (err.response?.status === 413) {
+        showToast("That file is too large for the server to accept. Resumes must be under 4 MB.", "error");
+      } else {
+        showToast(err.response?.data?.detail || "Failed to parse resume.", "error");
+      }
+    } finally { setUploading(false); }
   };
 
   const statusCounts = {
@@ -171,7 +196,7 @@ export default function CandidateDashboard() {
           {uploading ? "Parsing resume…" : hasResume ? "Upload New Resume" : "Upload Resume"}
           <input
             type="file"
-            accept=".pdf,.doc,.docx"
+            accept=".pdf,.docx"
             className="hidden"
             disabled={uploading}
             onChange={handleUpload}

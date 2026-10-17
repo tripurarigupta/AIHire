@@ -4,9 +4,6 @@ Generates role-relevant interview questions from a candidate's skill profile
 and evaluates free-text answers using TF-IDF similarity against per-skill
 reference keywords (mirrors the ATS matching approach used elsewhere).
 """
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-
 # Curated question templates + evaluation keywords for common skills.
 # Keys are lowercase skill names; values are (display name, reference keywords).
 SKILL_TOPICS = {
@@ -344,6 +341,11 @@ def generate_interview_questions(
 def _text_similarity(text_a: str, text_b: str) -> float:
     """Returns 0-100 cosine similarity between two text snippets."""
     try:
+        # Imported here rather than at module scope: scikit-learn takes several
+        # seconds to import, so it stays off the API's startup path.
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.metrics.pairwise import cosine_similarity
+
         vectorizer = TfidfVectorizer()
         tfidf = vectorizer.fit_transform([text_a, text_b])
         value = cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0]

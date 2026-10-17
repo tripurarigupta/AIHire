@@ -60,7 +60,7 @@ export default function JobCard({ job, alreadyApplied, applying, onApply }) {
           <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold text-emerald-700">
             ✓ Applied
           </span>
-        ) : (
+        ) : onApply ? (
           <button
             onClick={onApply}
             disabled={applying}
@@ -68,6 +68,12 @@ export default function JobCard({ job, alreadyApplied, applying, onApply }) {
           >
             {applying ? "Applying..." : "Apply"}
           </button>
+        ) : (
+          // Applying is candidate-only and the API enforces it, so recruiters
+          // and admins get a label rather than a button that would always fail.
+          <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+            Candidate accounts can apply
+          </span>
         )}
       </div>
     </div>

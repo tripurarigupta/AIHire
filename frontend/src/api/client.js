@@ -5,6 +5,11 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  // The API runs as a serverless function that scales to zero. A cold start
+  // plus an LLM-graded interview can take a while, but without a ceiling a
+  // hung request would leave the UI spinning forever. 60s covers the slowest
+  // normal request; callers that stream more data (resume upload) override it.
+  timeout: 60000,
 });
 
 apiClient.interceptors.request.use(

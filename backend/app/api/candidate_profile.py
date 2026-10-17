@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
+from urllib.parse import quote
 from uuid import UUID
 import os
 
@@ -15,7 +16,10 @@ from app.schemas.candidate_profile import (
     ResumeAnalysisResponse,
 )
 from app.services.candidate_profile_service import create_profile, upload_candidate_resume, get_resume_access
-from app.repositories.candidate_profile_repository import get_candidate_profile_by_user_id
+from app.repositories.candidate_profile_repository import (
+    get_candidate_profile_by_user_id,
+    get_resume_file,
+)
 from app.services.recommendation_service import get_recommendations_for_user
 
 
@@ -23,6 +27,19 @@ router = APIRouter(
     prefix="/candidate-profile",
     tags=["Candidate Profile"],
 )
+
+
+def _attachment_header(file_name: str | None) -> str:
+    """Build a Content-Disposition value that cannot break out of the header.
+
+    Resumes often have non-ASCII names, so the RFC 5987 `filename*` form carries
+    the real name while the plain `filename` stays ASCII as a fallback.
+    """
+    name = (file_name or "resume")
+    name = name.replace('"', "").replace("\r", "").replace("\n", "").strip() or "resume"
+    ascii_name = name.encode("ascii", "ignore").decode().strip() or "resume"
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(name)}"
+
 
 @router.get(
     "/me",
@@ -137,7 +154,6 @@ def get_resume_analysis(
 
 @router.get(
     "/resume/{resume_id}",
-    response_class=FileResponse,
 )
 def download_resume(
     resume_id: UUID,
@@ -161,16 +177,27 @@ def download_resume(
             detail=str(error),
         )
 
-    if not os.path.exists(resume.file_path):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume file not found on server",
+    # Uploads are stored in the database, which is the only place that works on
+    # a read-only serverless filesystem. Rows created before that change have no
+    # stored bytes, so fall back to the file on disk while it is still there.
+    stored_file = get_resume_file(db, resume.id)
+    if stored_file is not None:
+        return Response(
+            content=stored_file.data,
+            media_type=stored_file.content_type or "application/octet-stream",
+            headers={"Content-Disposition": _attachment_header(stored_file.file_name)},
         )
 
-    return FileResponse(
-        resume.file_path,
-        filename=resume.file_name,
-        media_type="application/octet-stream",
+    if resume.file_path and os.path.exists(resume.file_path):
+        return FileResponse(
+            resume.file_path,
+            filename=resume.file_name,
+            media_type="application/octet-stream",
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Resume file not found on server",
     )
         
         

@@ -1,7 +1,5 @@
 from sqlalchemy.orm import Session
 
-import os
-import shutil
 import uuid
 from fastapi import UploadFile
 
@@ -13,6 +11,7 @@ from app.repositories.candidate_profile_repository import (
     get_candidate_profile_by_id,
     create_candidate_profile,
     add_resume_to_profile,
+    add_resume_file,
     get_resume_by_id,
 )
 from app.repositories.application_repository import has_application_between_candidate_and_recruiter
@@ -51,9 +50,15 @@ def create_profile(
     )
     
 
-# Create the directory if it doesn't exist
-UPLOAD_DIR = "uploads/resumes"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+# Resumes are stored in the database, not on disk. The API is deployed to a
+# serverless platform whose filesystem is read-only apart from /tmp, and anything
+# written there is discarded with the instance - so a resume saved to disk either
+# fails to write or is missing when a recruiter later tries to download it.
+#
+# Hosting platforms also cap the request body (Vercel Functions reject anything
+# over 4.5 MB before the request reaches the app), so this limit fails early with
+# a readable message and keeps a margin under that ceiling.
+MAX_RESUME_BYTES = 4 * 1024 * 1024
 
 ALLOWED_EXTENSIONS = {"pdf", "docx"}
 
@@ -62,6 +67,19 @@ ALLOWED_CONTENT_TYPES = {
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
+
+CONTENT_TYPES_BY_EXTENSION = {
+    "pdf": "application/pdf",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+
+def _resolve_content_type(file: UploadFile, file_extension: str) -> str:
+    """Content type to hand back when this upload is downloaded again."""
+    if file.content_type in ALLOWED_CONTENT_TYPES:
+        return file.content_type
+    return CONTENT_TYPES_BY_EXTENSION.get(file_extension, "application/octet-stream")
+
 
 def upload_candidate_resume(
     db: Session,
@@ -94,18 +112,23 @@ def upload_candidate_resume(
         ):
             raise ValueError("File content does not match a supported format")
 
-    unique_filename = f"{profile.id}_{uuid.uuid4().hex[:8]}.{file_extension}"
-    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    # Read the upload once and hold it in memory: the same bytes get parsed and
+    # then stored, so nothing in this flow depends on the filesystem.
+    file_bytes = file.file.read()
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    if not file_bytes:
+        raise ValueError("The uploaded file is empty")
+
+    if len(file_bytes) > MAX_RESUME_BYTES:
+        raise ValueError(
+            f"Resume must be {MAX_RESUME_BYTES // (1024 * 1024)} MB or smaller"
+        )
 
     # Branch the parsing logic based on the file extension
-    extracted_text = ""
     if file_extension == "pdf":
-        extracted_text = extract_text_from_pdf(file_path)
-    elif file_extension == "docx":
-        extracted_text = extract_text_from_docx(file_path)
+        extracted_text = extract_text_from_pdf(file_bytes)
+    else:
+        extracted_text = extract_text_from_docx(file_bytes)
 
     extracted_skills_string = extract_skills_from_text(extracted_text)
 
@@ -116,10 +139,9 @@ def upload_candidate_resume(
     # Heuristic ATS-style analysis of the parsed resume content
     analysis = analyze_resume(extracted_text, extracted_skills_string)
 
-    return add_resume_to_profile(
+    resume = add_resume_to_profile(
         db=db,
         candidate_id=profile.id,
-        file_path=file_path,
         file_name=original_file_name,
         parsed_text=extracted_text,
         parsed_skills={
@@ -133,6 +155,19 @@ def upload_candidate_resume(
         },
         ats_score=analysis["ats_score"],
     )
+
+    # Keep the bytes with the resume so recruiters can download it no matter
+    # which serverless instance serves the request.
+    add_resume_file(
+        db=db,
+        resume_id=resume.id,
+        file_name=original_file_name,
+        data=file_bytes,
+        content_type=_resolve_content_type(file, file_extension),
+    )
+
+    # Re-read so the response carries the resume that was just stored.
+    return get_candidate_profile_by_id(db, profile.id)
 
 
 def get_resume_access(

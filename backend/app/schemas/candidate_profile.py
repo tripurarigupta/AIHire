@@ -15,7 +15,8 @@ class CandidateProfileCreate(BaseModel):
 class ResumeResponse(BaseModel):
     id: UUID
     file_name: str
-    file_path: str
+    # Only set for resumes uploaded before the bytes moved into the database.
+    file_path: str | None = None
     ats_score: float | None = None
     parsed_skills: dict | None = None
 

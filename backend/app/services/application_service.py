@@ -1,7 +1,5 @@
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 from app.models.application_status import ApplicationStatus
 from app.repositories.application_repository import (
@@ -36,6 +34,12 @@ def calculate_ats_match(candidate_skills: str | None, required_skills: str | Non
         return 0.0
 
     try:
+        # Imported here rather than at module scope: scikit-learn takes several
+        # seconds to import, and only scoring requests need it. Keeping it off
+        # the import path is what makes a serverless cold start quick.
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.metrics.pairwise import cosine_similarity
+
         vectorizer = TfidfVectorizer()
         tfidf = vectorizer.fit_transform([c_text, j_text])
         score = cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0]
