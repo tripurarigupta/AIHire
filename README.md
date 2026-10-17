@@ -20,11 +20,6 @@ Candidates build a profile, upload a resume and get a real ATS match score again
 4. [Backend setup](#backend-setup)
 5. [Frontend setup](#frontend-setup)
 6. [How the AI pieces work](#how-the-ai-pieces-work)
-7. [API reference](#api-reference)
-8. [Frontend routes](#frontend-routes)
-9. [Verification scripts](#verification-scripts)
-10. [Deployment notes](#deployment-notes)
-11. [Troubleshooting](#troubleshooting)
 
 ---
 

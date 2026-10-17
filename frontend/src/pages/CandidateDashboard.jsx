@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import apiClient from "../api/client";
+import { cachedGet } from "../api/cachedGet";
+import { writeCache } from "../utils/apiCache";
 import {
   MetricCard,
   ApplicationCard,
@@ -35,18 +37,22 @@ export default function CandidateDashboard() {
   const [profileError, setProfileError] = useState("");
   const [fetchError, setFetchError] = useState(null);
 
+  // Both of these are read through the shared cache. This page, the Applications
+  // page and the Companies page all read the same two resources, so navigating
+  // between them now reuses what was fetched moments ago instead of re-requesting
+  // it on every click.
   const fetchProfile = async () => {
     try {
-      const res = await apiClient.get("/candidate-profile/me");
-      setProfile(res.data);
-      setProfileForm({ education: res.data.education || "", skills: res.data.skills || "", bio: res.data.bio || "" });
+      const profileData = await cachedGet("/candidate-profile/me");
+      setProfile(profileData);
+      setProfileForm({ education: profileData.education || "", skills: profileData.skills || "", bio: profileData.bio || "" });
     } catch {
       setProfile(null);
     }
   };
 
   const fetchApplications = async () => {
-    try { const res = await apiClient.get("/applications/me"); setApplications(res.data); } catch { setApplications([]); }
+    try { setApplications(await cachedGet("/applications/me")); } catch { setApplications([]); }
   };
 
   const showToast = (text, type = "success") => {
@@ -84,6 +90,8 @@ export default function CandidateDashboard() {
       const endpoint = profile ? "/candidate-profile/me" : "/candidate-profile";
       const res = await apiClient[method](endpoint, form);
       setProfile(res.data);
+      // Keep the cache in step so other pages do not show the pre-edit profile.
+      writeCache("/candidate-profile/me", res.data);
       setShowProfileModal(false);
       showToast("Profile saved successfully.");
     } catch (err) { setProfileError(err.response?.data?.detail || "Failed to save profile."); } finally { setSavingProfile(false); }
@@ -111,6 +119,7 @@ export default function CandidateDashboard() {
       });
       const lastResume = res.data.resumes?.[0];
       setProfile(res.data);
+      writeCache("/candidate-profile/me", res.data);
       setProfileForm({ education: res.data.education || "", skills: res.data.skills || "", bio: res.data.bio || "" });
       showToast(lastResume?.ats_score != null ? `Resume parsed. ATS score: ${lastResume.ats_score}/100.` : "Resume parsed. Skills extracted.");
     } catch (err) {

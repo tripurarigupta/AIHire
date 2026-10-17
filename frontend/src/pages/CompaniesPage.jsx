@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import apiClient from "../api/client";
+import { cachedGet } from "../api/cachedGet";
+import { invalidate } from "../utils/apiCache";
 import { JobCard, Toast } from "../components/ui";
 
 export default function CompaniesPage() {
@@ -24,10 +26,12 @@ export default function CompaniesPage() {
 
   useEffect(() => {
     setMounted(true);
-    Promise.all([apiClient.get("/jobs"), apiClient.get("/applications/me")])
-      .then(([jobsRes, appsRes]) => {
-        setJobs(jobsRes.data);
-        const ids = new Set((appsRes.data || []).filter((a) => (a.status || "").toLowerCase() !== "rejected").map((a) => String(a.job_id)));
+    // Both resources are shared with the dashboard and the applications page, so
+    // the cache makes most visits to this page hit zero endpoints.
+    Promise.all([cachedGet("/jobs"), cachedGet("/applications/me")])
+      .then(([jobsData, appsData]) => {
+        setJobs(jobsData);
+        const ids = new Set((appsData || []).filter((a) => (a.status || "").toLowerCase() !== "rejected").map((a) => String(a.job_id)));
         setAppliedJobIds(ids);
       })
       .catch(() => setJobs([]));
@@ -38,6 +42,8 @@ export default function CompaniesPage() {
     setApplyingJobId(strJobId);
     try {
       await apiClient.post(`/jobs/${strJobId}/applications`, { cover_letter: "Applied via AIHire Companies Page" });
+      // The applications list changed, so drop the cached copy other pages read.
+      invalidate("/applications/me");
       setAppliedJobIds((prev) => new Set(prev).add(strJobId));
       showToast(`Application submitted for ${job.title}.`);
     } catch (err) {

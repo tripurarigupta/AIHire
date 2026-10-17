@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../api/client";
+import { cachedGet } from "../api/cachedGet";
 import { InterviewSetupView, InterviewActiveView, InterviewResultView, InterviewHistoryView } from "../components/ui";
 import { createResponses, advance, toSubmitPayload, answeredCount } from "../utils/interviewState";
 
@@ -22,12 +23,15 @@ export default function InterviewPage() {
   const [expandedHistory, setExpandedHistory] = useState(null);
   const [eligible, setEligible] = useState(null);
 
-  const fetchJobs = () => apiClient.get("/jobs").then((r) => setJobs(r.data)).catch((e) => console.error("Failed to load jobs:", e));
+  // Jobs and applications are shared with the other candidate pages, so both are
+  // read through the cache. History is deliberately NOT cached: it changes as soon
+  // as an interview is submitted, and this page refetches it right after that.
+  const fetchJobs = () => cachedGet("/jobs").then(setJobs).catch((e) => console.error("Failed to load jobs:", e));
   const fetchHistory = () => apiClient.get("/interviews/history").then((r) => setHistory(r.data)).catch((e) => console.error("Failed to load history:", e));
   // Mirrors the server-side gate: only candidates with an application in the
   // Interview stage may practice. The server still enforces it on /questions.
-  const fetchEligibility = () => apiClient.get("/applications/me")
-    .then((r) => setEligible((r.data || []).some((a) => a.status === "interview")))
+  const fetchEligibility = () => cachedGet("/applications/me")
+    .then((apps) => setEligible((apps || []).some((a) => a.status === "interview")))
     .catch(() => setEligible(false));
 
   useEffect(() => { fetchJobs(); fetchHistory(); fetchEligibility(); }, []);

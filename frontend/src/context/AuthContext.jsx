@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from "react";
 import apiClient from "../api/client";
+import { clearApiCache } from "../utils/apiCache";
 
 const AuthContext = createContext(null);
 
@@ -29,6 +30,9 @@ export const AuthProvider = ({ children }) => {
     });
 
     const accessToken = loginResponse.data.access_token;
+    // Cached responses are keyed by path, not by user, so a fresh sign-in must not
+    // be able to reuse anything fetched during the previous session.
+    clearApiCache();
     localStorage.setItem("token", accessToken);
     setToken(accessToken);
 
@@ -41,6 +45,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    clearApiCache();
     setToken(null);
     setUser(null);
     localStorage.removeItem("token");

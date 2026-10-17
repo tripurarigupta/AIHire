@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import apiClient from "../api/client";
+import { cachedGet } from "../api/cachedGet";
 import { SummaryCard, ApplicationCard, ApplicantDetailsModal, Toast } from "../components/ui";
 
 export default function ApplicationsPage() {
@@ -19,8 +19,10 @@ export default function ApplicationsPage() {
 
   const showToast = (text, type = "success") => { setToast({ text, type }); setTimeout(() => setToast(null), 3500); };
 
-  const fetchApplications = async () => { try { const res = await apiClient.get("/applications/me"); setApplications(res.data); } catch { setApplications([]); } };
-  const fetchProfile = async () => { try { const res = await apiClient.get("/candidate-profile/me"); setProfile(res.data); } catch { setProfile(null); } };
+  // Read through the shared cache so switching to this page from the dashboard or
+  // the job board does not re-request the same two resources.
+  const fetchApplications = async () => { try { setApplications(await cachedGet("/applications/me")); } catch { setApplications([]); } };
+  const fetchProfile = async () => { try { setProfile(await cachedGet("/candidate-profile/me")); } catch { setProfile(null); } };
 
   useEffect(() => {
     setMounted(true);
