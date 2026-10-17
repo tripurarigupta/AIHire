@@ -18,7 +18,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://aihire-three.vercel.app/"], # The exact Vite frontend URLs
+    allow_origins=["http://localhost:5173", "https://aihire-three.vercel.app"], # The exact Vite frontend URLs
     allow_credentials=True, # Allows the frontend to send cookies or Authorization headers
     allow_methods=["*"], # Allows all HTTP methods (POST, GET, OPTIONS, etc.)
     allow_headers=["*"], # Allows all headers
